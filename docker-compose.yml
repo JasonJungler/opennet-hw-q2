@@ -1,0 +1,26 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # RabbitMQ communication port
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  receiver:
+    build:
+      context: .
+    container_name: receiver
+    depends_on:
+      rabbitmq:
+        condition: service_healthy  # Wait for RabbitMQ healthcheck to pass
+    environment:
+      - PYTHONUNBUFFERED=1 # for real-time visibility into stdout
+    command: ["python", "src/main.py", "receive"]
